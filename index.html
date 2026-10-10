@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ôn tập HCM202 – Tư tưởng Hồ Chí Minh</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    /* Apply theme before paint to avoid flash */
+    (function () {
+      try {
+        var k = "fe_learn_theme_v1";
+        var t = localStorage.getItem(k);
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        }
+        if (t === "dark") document.documentElement.classList.add("dark");
+        else document.documentElement.classList.remove("dark");
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css?v=20261010_hcm202" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-code" id="brandCode">HCM202</span>
+        <span class="brand-sub" id="brandSub">Ôn tập FE</span>
+      </div>
+      <nav class="subjects" id="subjects" aria-label="Chọn môn">
+        <button type="button" class="sub-tab active" data-subject="hcm202">HCM202 – Tư tưởng Hồ Chí Minh</button>
+      </nav>
+      <div class="top-actions">
+        <button type="button" class="btn ghost" id="btnSearch" title="Tìm kiếm câu hỏi (Ctrl+K)" aria-label="Tìm kiếm câu hỏi">🔍</button>
+        <button type="button" class="btn ghost" id="btnTheme" title="Sáng / Tối" aria-label="Đổi giao diện sáng tối">🌙</button>
+        <button type="button" class="btn ghost" id="btnSync" title="Đồng bộ">☁</button>
+        <button type="button" class="btn ghost" id="btnMode" title="Chế độ">Lần lượt</button>
+        <button type="button" class="btn ghost" id="btnShuffle" title="Xáo trộn">🔀</button>
+        <button type="button" class="btn ghost" id="btnReset" title="Reset">↺</button>
+      </div>
+    </header>
+
+    <!-- Chỉ hiện khi owner mở bằng link ?stats=… — khách thường không thấy -->
+    <div class="visit-bar" id="visitStats" hidden title="Thống kê truy cập (chỉ bạn thấy)">
+      <span class="visit-label">Truy cập site</span>
+      <span class="visit-item"><b id="statVisitors">…</b> khách</span>
+      <span class="visit-sep">·</span>
+      <span class="visit-item"><b id="statViews">…</b> lượt xem</span>
+      <button type="button" class="btn small visit-hide" id="btnHideStats" title="Ẩn thống kê trên máy này">Ẩn</button>
+    </div>
+
+    <div class="workspace">
+      <main class="main-col">
+        <div class="toolbar-simple">
+          <div class="stats-inline" id="stats">
+            <span><b id="statDone">0</b> đã làm</span>
+            <span class="ok"><b id="statOk">0</b> đúng</span>
+            <span class="bad"><b id="statBad">0</b> sai</span>
+            <span><b id="statLeft">0</b> còn</span>
+            <div class="progress-wrap">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button type="button" class="btn small search-trigger-btn" id="btnQuickSearch" title="Tìm kiếm câu hỏi (Ctrl+K)">🔍 Tìm kiếm</button>
+            <label class="jump">
+              Câu
+              <input type="number" id="jumpInput" min="1" max="9999" value="1" />
+              <button type="button" class="btn small" id="btnJump">Đi</button>
+            </label>
+            <div class="filters">
+              <button type="button" class="chip active" data-filter="all">Tất cả</button>
+              <button type="button" class="chip" data-filter="wrong">Sai</button>
+              <button type="button" class="chip" data-filter="unseen">Chưa</button>
+              <button type="button" class="chip" data-filter="star">★</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hàng nguồn riêng (full width) — Quiz PT không bị chèn/ẩn trong toolbar -->
+        <div class="source-bar filters source-filters" id="sourceFilters" hidden>
+          <span class="source-label" id="sourceLabel">Dạng câu</span>
+          <button type="button" class="chip active" data-source="all">Tất cả</button>
+          <button type="button" class="chip" data-source="type:mcq">Trắc nghiệm</button>
+          <button type="button" class="chip" data-source="type:fill2">Điền khuyết (2 lựa chọn)</button>
+          <button type="button" class="chip" data-source="type:fill">Điền khuyết (tự điền)</button>
+        </div>
+
+        <article class="exam-card" id="examCard">
+          <div class="card-header">
+            <span class="card-code" id="cardCode">—</span>
+            <span class="card-sep">|</span>
+            <span class="card-qnum" id="cardQnum">—</span>
+            <span class="card-pos" id="sideMeta"></span>
+          </div>
+          <p class="card-choose" id="cardChoose"></p>
+          <h1 class="card-question" id="cardQuestion">Đang tải…</h1>
+          <div class="card-options" id="cardOptions"></div>
+          <!-- Nav ngay sau đáp án: không phải lướt qua feedback/giải thích mới bấm Tiếp -->
+          <div class="card-nav" id="cardNav">
+            <button type="button" class="btn" id="btnPrev">← Trước</button>
+            <button type="button" class="btn" id="btnStar" title="Đánh dấu">☆</button>
+            <button type="button" class="btn" id="btnCheck" hidden aria-hidden="true">Kiểm tra</button>
+            <button type="button" class="btn" id="btnReveal">Hiện ĐA</button>
+            <button type="button" class="btn primary" id="btnNext">Tiếp →</button>
+          </div>
+          <div class="card-feedback" id="cardFeedback" hidden></div>
+          <div class="card-explain" id="cardExplain" hidden></div>
+          <div class="card-note" id="cardNote" hidden></div>
+          <div class="card-alt" id="cardAlt" hidden></div>
+        </article>
+      </main>
+
+      <aside class="side-map" aria-label="Bản đồ câu">
+        <div class="map-head">
+          <span>Bản đồ</span>
+          <span class="map-count"><span id="mapCount">0</span> câu</span>
+        </div>
+        <div class="map-legend">
+          <span><i class="dot current"></i> đang làm</span>
+          <span><i class="dot ok"></i> đúng</span>
+          <span><i class="dot bad"></i> sai</span>
+          <span><i class="dot unseen"></i> chưa</span>
+        </div>
+        <div class="q-map" id="qMap" role="list"></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="searchModal" hidden>
+    <div class="modal modal-search" role="dialog" aria-labelledby="searchTitle" aria-modal="true">
+      <header class="modal-head">
+        <h2 id="searchTitle">Tìm kiếm câu hỏi</h2>
+        <button type="button" class="btn ghost" id="btnSearchClose" aria-label="Đóng">✕</button>
+      </header>
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Nhập từ khóa (nội dung, đáp án, giải thích, ID câu)..." autocomplete="off" spellcheck="false" />
+        <button type="button" class="search-clear-btn" id="btnSearchClear" hidden title="Xóa từ khóa">✕</button>
+      </div>
+      <div class="search-meta-bar">
+        <span class="search-count" id="searchCount">Nhập từ khóa để tìm kiếm</span>
+        <span class="search-shortcut-hint"><kbd>Ctrl</kbd> + <kbd>K</kbd> hoặc <kbd>/</kbd></span>
+      </div>
+      <div class="search-results" id="searchResults" role="list"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="accessModal" hidden>
+    <div class="modal modal-access" role="dialog" aria-labelledby="accessTitle" aria-modal="true">
+      <header class="modal-head">
+        <h2 id="accessTitle">Mã truy cập</h2>
+        <button type="button" class="btn ghost" id="btnAccessCancel" aria-label="Đóng">✕</button>
+      </header>
+      <p class="modal-lead" id="accessLead">JFE301 và JIT401 chỉ mở cho người có mã.</p>
+      <label class="sync-field">
+        Mã
+        <input type="password" id="accessCodeInput" placeholder="Nhập mã…" autocomplete="current-password" spellcheck="false" />
+      </label>
+      <p class="access-error" id="accessError" hidden></p>
+      <div class="sync-actions">
+        <button type="button" class="btn primary" id="btnAccessOk">Mở khóa</button>
+        <button type="button" class="btn" id="btnAccessCancel2">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="syncModal" hidden>
+    <div class="modal" role="dialog" aria-labelledby="syncTitle">
+      <header class="modal-head">
+        <h2 id="syncTitle">Đồng bộ</h2>
+        <button type="button" class="btn ghost" id="btnSyncClose">✕</button>
+      </header>
+      <p class="modal-lead"><strong>Mã ngắn:</strong> «Tạo mã» → copy ~9 ký tự (vd. <code>6DELWTL9X</code>) sang máy kia → «Kéo về». Mỗi lần «Đẩy lên» có thể ra mã mới.</p>
+      <label class="sync-field">
+        Mã ngắn
+        <div class="sync-row">
+          <input type="text" id="syncCodeInput" placeholder="vd. 6DELWTL9X" autocomplete="off" spellcheck="false" />
+          <button type="button" class="btn small" id="btnSyncCopy">Copy</button>
+        </div>
+      </label>
+      <div class="sync-actions">
+        <button type="button" class="btn primary" id="btnSyncCreate">Tạo mã</button>
+        <button type="button" class="btn" id="btnSyncPush">Đẩy lên</button>
+        <button type="button" class="btn" id="btnSyncPull">Kéo về</button>
+      </div>
+      <label class="sync-check">
+        <input type="checkbox" id="syncAuto" />
+        Tự đồng bộ (không khuyến nghị)
+      </label>
+      <p class="sync-status" id="syncStatus">Chưa kết nối.</p>
+      <div class="sync-link-box" id="syncLinkBox" hidden>
+        <a id="syncLink" href="#" target="_blank" rel="noopener"></a>
+        <button type="button" class="btn small" id="btnSyncCopyLink">Copy link</button>
+      </div>
+      <hr class="modal-hr" />
+      <p class="modal-lead" style="margin:0 0 0.5rem">Dự phòng offline (không cần server)</p>
+      <div class="sync-actions">
+        <button type="button" class="btn small" id="btnSyncCopyProgress">Copy tiến độ</button>
+        <button type="button" class="btn small" id="btnSyncPasteProgress">Dán tiến độ</button>
+        <button type="button" class="btn small" id="btnSyncExport">Xuất JSON</button>
+        <button type="button" class="btn small" id="btnSyncImport">Nhập JSON</button>
+        <input type="file" id="syncImportFile" accept="application/json,.json" hidden />
+      </div>
+      <label class="sync-field">
+        Dán mã nén F2:… (offline)
+        <textarea id="syncPasteBox" rows="2" placeholder="Chỉ khi không dùng được mã ngắn" spellcheck="false"></textarea>
+      </label>
+    </div>
+  </div>
+
+  <script src="app.js?v=20261010_hcm202"></script>
+</body>
+</html>
